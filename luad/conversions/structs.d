@@ -8,6 +8,12 @@ For an example, see the "Configuration File" example on the $(LINK2 $(REFERENCET
 */
 module luad.conversions.structs;
 
+import std.traits   : isType, isFunction, isArray, isAssociativeArray, isIterable, isPointer, isSomeChar, isSomeString;
+import std.traits   : Unqual, OriginalType;
+import std.typecons : isTuple;
+import std.meta     : Alias;
+
+
 import luad.c.all;
 
 import luad.stack;
@@ -16,6 +22,20 @@ private template isInternal(string field)
 {
 	enum isInternal = field.length >= 2 && field[0..2] == "__";
 }
+
+private
+template isPropertyOrMethod(T, string field)
+{
+    alias fieldValue = Alias!(__traits(getMember, T, field));
+    enum  isPropertyOrMethod = !isType!(fieldValue) && !is(typeof(fieldValue) == void);
+}
+template isMethod(T, string field)
+{
+    alias fieldValue = Alias!(__traits(getMember, T, field));
+    enum  isMethod = isPropertyOrMethod!(T, field) && isFunction!(fieldValue);
+}
+private
+enum isProperty(T, string field) = isPropertyOrMethod!(T, field) && !isMethod!(T, field);
 
 //TODO: ignore static fields, post-blits, destructors, etc?
 void pushStruct(T)(lua_State* L, ref T value) if (is(T == struct))
@@ -26,7 +46,8 @@ void pushStruct(T)(lua_State* L, ref T value) if (is(T == struct))
 	{
 		static if(!isInternal!field &&
 		          field != "this" &&
-		          field != "opAssign")
+		          field != "opAssign" &&
+		          isPropertyOrMethod!(T, field) )
 		{
 			pushValue(L, field);
 
