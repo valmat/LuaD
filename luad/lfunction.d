@@ -1,5 +1,6 @@
 module luad.lfunction;
 
+import std.stdio : File;
 import luad.base;
 import luad.table;
 import luad.stack;
@@ -119,6 +120,23 @@ struct LuaFunction
 		auto ret = lua_dump(this.state, &luaCWriter, &writer);
 		lua_pop(this.state, 1);
 		return ret == 0;
+	}
+	void dump(string fileName)
+	{
+        auto f = File(fileName, "wb");
+        dump((data) {f.rawWrite(data); return true;});
+        f.close();
+	}
+	const(char)[] dump()
+	{
+        char[] data;
+        dump((chunk) {
+        	data.reserve(data.length + chunk.length);
+        	const(char)* ptr = cast(const(char)*) chunk.ptr;
+        	data ~= ptr[0 .. chunk.length];
+        	return true;
+        });
+        return data;
 	}
 }
 

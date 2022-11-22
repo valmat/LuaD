@@ -219,6 +219,29 @@ public:
 	}
 
 	/**
+	 * Compile a string of Lua _code.
+	 * Params:
+	 *	 code = _code to compile
+	 * Returns:
+	 *   Loaded _code as a function.
+	 *  Preferable to load raw bytecode
+	 */
+	LuaFunction loadBuffer(in char[] code, string name) @trusted
+	{
+		if(luaL_loadbuffer(L, code.ptr, code.length, name.ptr) != 0)
+			lua_error(L);
+
+		return popValue!LuaFunction(L);
+	}
+	LuaFunction loadBuffer(in char[] code) @trusted
+	{
+		if(luaL_loadbuffer(L, code.ptr, code.length, code.ptr) != 0)
+			lua_error(L);
+
+		return popValue!LuaFunction(L);
+	}
+
+	/**
 	 * Compile a file of Lua code.
 	 * Params:
 	 *	 path = _path to file
