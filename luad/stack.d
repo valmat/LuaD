@@ -124,6 +124,16 @@ void pushValue(T)(lua_State* L, T value)
 	else static if(isArray!T)
 		pushArray(L, value);
 
+	else static if(isInputRange!T && !isSomeString!T)
+	    pushValue(L, () => () {
+	        if(!value.empty) {
+	            auto cur = nullable(value.front);
+	            value.popFront();
+	            return cur;
+	        }
+	        return Nullable!(ElementType!T)();
+	    });
+		
 	else static if(is(T == struct))
 		pushStruct(L, value);
 
