@@ -72,6 +72,7 @@ import luad.conversions.structs;
 import luad.conversions.assocarrays;
 import luad.conversions.classes;
 import luad.conversions.variant;
+import luad.conversions.nullable;
 
 /**
  * Push a value of any type to the stack.
@@ -110,6 +111,9 @@ void pushValue(T)(lua_State* L, T value)
 
 	else static if(is(T : const(char)*))
 		lua_pushstring(L, value);
+
+	else static if(isNullable!T)
+		pushNullable(L, value);
 
 	else static if(isVariant!T)
 		pushVariant(L, value);
@@ -217,7 +221,7 @@ T getValue(T, alias typeMismatchHandler = defaultTypeMismatch)(lua_State* L, int
 		static assert("Ambiguous type " ~ T.stringof ~ " in stack push operation. Consider converting before pushing.");
 	}
 
-	static if(!is(T == LuaObject) && !is(T == LuaDynamic) && !isVariant!T)
+	static if(!is(T == LuaObject) && !is(T == LuaDynamic) && !isVariant!T && !isNullable!T)
 	{
 		int type = lua_type(L, idx);
 		enum expectedType = luaTypeOf!T;
@@ -287,6 +291,10 @@ T getValue(T, alias typeMismatchHandler = defaultTypeMismatch)(lua_State* L, int
 			luaL_error(L, "Type not allowed in Variant: %s", luaL_typename(L, idx));
 
 		return getVariant!T(L, idx);
+	}
+	else static if(isNullable!T)
+	{
+		return getNullable!T(L, idx);
 	}
 	else static if(is(T == struct))
 		return getStruct!T(L, idx);
@@ -547,7 +555,10 @@ void printStack(lua_State* L)
 	lua_pop(L, top); // luaL_tolstring always pushes one
 }
 
-version(unittest) import luad.testing;
+version(unittest) {
+	import luad.testing;
+	import  core.stdc.string : strcmp;
+}
 
 unittest
 {
