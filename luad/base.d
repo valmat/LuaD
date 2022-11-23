@@ -2,6 +2,7 @@ module luad.base;
 
 import luad.c.all;
 import luad.stack;
+import luad.lfunction;
 
 import core.stdc.string : strlen;
 
@@ -196,6 +197,23 @@ struct LuaObject
 
 		return lua_equal(state, -1, -2);
 	}
+
+	@property LuaFunction fun() @trusted
+	{
+        LuaFunction f;
+        f.object = this;
+        return f;
+	}
+
+	LuaObject[] opCall(U...)(U args)
+	{
+		return fun()(args);
+	}
+
+	T call(T = void, U...)(U args)
+	{
+		return fun().call!T(args);
+	}	
 }
 
 unittest
